@@ -22,7 +22,7 @@
     "@tanstack/react-query": "^5.35.1",
     "framer-motion": "^10.16.16",
     "gsap": "^3.12.2",
-    "three": "^r159",
+    "three": "^0.159.0",
     "react-three-fiber": "^8.15.12",
     "drei": "^9.88.3",
     "mapbox-gl": "^2.15.8",
