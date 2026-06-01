@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3000/api
+      - NEXT_PUBLIC_WS_URL=ws://localhost:3000
+    depends_on:
+      - postgres
+    networks:
+      - aegisflow
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=aegisflow
+      - POSTGRES_PASSWORD=changeme
+      - POSTGRES_DB=aegisflow
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - aegisflow
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    networks:
+      - aegisflow
+
+volumes:
+  postgres_data:
+
+networks:
+  aegisflow:
+    driver: bridge
