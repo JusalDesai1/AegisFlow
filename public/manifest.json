@@ -1,0 +1,49 @@
+{
+  "name": "aegisflow",
+  "displayName": "AegisFlow",
+  "description": "AI-Powered Emergency Operations Intelligence Platform",
+  "startUrl": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "backgroundColor": "#050a15",
+  "themeColor": "#ff6b4a",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["emergency", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "New Incident",
+      "shortName": "Incident",
+      "description": "Report a new emergency incident",
+      "url": "/dashboard/incidents/new",
+      "icons": [{"src": "/icon-96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Dispatch Units",
+      "shortName": "Dispatch",
+      "description": "Dispatch emergency response units",
+      "url": "/dashboard/dispatch",
+      "icons": [{"src": "/icon-96.png", "sizes": "96x96"}]
+    }
+  ]
+}

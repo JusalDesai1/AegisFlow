@@ -1,42 +1,47 @@
-version: '3.9'
+version: '3.8'
 
 services:
-  app:
+  # Next.js Application
+  web:
     build: .
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:3000/api
-      - NEXT_PUBLIC_WS_URL=ws://localhost:3000
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_WS_URL=ws://localhost:3001
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+  # Backend API (Optional - for local dev)
+  api:
+    image: node:18-alpine
+    working_dir: /app
+    command: npm run dev:api
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://user:password@postgres:5432/aegisflow
+    volumes:
+      - ./server:/app
     depends_on:
       - postgres
-    networks:
-      - aegisflow
 
+  # PostgreSQL Database
   postgres:
-    image: postgres:16-alpine
+    image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=aegisflow
-      - POSTGRES_PASSWORD=changeme
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
       - POSTGRES_DB=aegisflow
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - aegisflow
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - '6379:6379'
-    networks:
-      - aegisflow
 
 volumes:
   postgres_data:
-
-networks:
-  aegisflow:
-    driver: bridge
