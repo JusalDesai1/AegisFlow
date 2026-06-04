@@ -2,12 +2,10 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AegisFlow - AI-Powered Disaster Intelligence',
-  description: 'National emergency operations platform for coordinating disaster response across agencies',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
-  icons: {
-    icon: '/favicon.ico',
-  },
+  title: 'AegisFlow - Emergency Operations Intelligence Platform',
+  description: 'AI-Powered Emergency Operations Intelligence Platform for disaster response coordination',
+  viewport: 'width=device-width, initial-scale=1',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -18,15 +16,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
+        <meta name="theme-color" content="#ff6b4a" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className="bg-aegis-darker text-aegis-text-primary antialiased">
-        {children}
+      <body className="bg-aegis-darker text-aegis-text-primary">
+        <div id="root">{children}</div>
       </body>
     </html>
   );
