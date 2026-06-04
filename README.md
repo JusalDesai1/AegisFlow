@@ -381,6 +381,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed setup.
 - All components must be WCAG 2.1 AA compliant
 - Add tests for new features
 - Update README if needed
+- Update
 
 ---
 
