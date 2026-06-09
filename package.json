@@ -1,1 +1,15 @@
-{\n  \"name\": \"aegisflow\",\n  \"version\": \"1.0.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start\",\n    \"lint\": \"next lint\",\n    \"type-check\": \"tsc --noEmit --skipLibCheck\",\n    \"lint:fix\": \"next lint --fix\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\",\n    \"next\": \"^14.0.0\",\n    \"zustand\": \"^4.4.7\",\n    \"three\": \"^0.154.0\",\n    \"@react-three/fiber\": \"^8.14.0\",\n    \"@react-three/drei\": \"^9.88.0\",\n    \"react-map-gl\": \"^7.1.7\",\n    \"mapbox-gl\": \"^2.15.0\",\n    \"recharts\": \"^2.10.0\",\n    \"date-fns\": \"^2.30.0\",\n    \"lucide-react\": \"^0.294.0\"\n  },\n  \"devDependencies\": {\n    \"typescript\": \"^5.2.0\",\n    \"@types/react\": \"^18.2.0\",\n    \"@types/react-dom\": \"^18.2.0\",\n    \"@types/node\": \"^20.0.0\",\n    \"@types/three\": \"^0.154.0\",\n    \"tailwindcss\": \"^3.3.0\",\n    \"autoprefixer\": \"^10.4.0\",\n    \"postcss\": \"^8.4.0\",\n    \"eslint\": \"^8.48.0\",\n    \"eslint-config-next\": \"^14.0.0\",\n    \"prettier\": \"^3.0.0\"\n  },\n  \"engines\": {\n    \"node\": \"18.x || 20.x\",\n    \"npm\": \">=8.0.0\"\n  }\n}\n
+{
+  "name": "aegisflow",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}
