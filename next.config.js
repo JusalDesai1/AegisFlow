@@ -1,31 +1,35 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',        // Added for static HTML export
-  basePath: '/AegisFlow',  // Added to fix broken paths on repository subfolders
-  reactStrictMode: true,
-  swcMinify: true,
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
+      { hostname: '*.mapbox.com' },
+      { hostname: 'api.dicebear.com' },
     ],
-    unoptimized: true,     // Changed to true (mandatory for static exports)
   },
-  webpack: (config, { isServer }) => {
-    config.module.rules.push({
-      test: /\.(glsl|vs|fs|vert|frag)$/,
-      exclude: /node_modules/,
-      use: ['raw-loader', 'glslify-loader'],
-    });
-    return config;
+  headers: async () => [
+    {
+      source: '/(.*)',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'X-XSS-Protection', value: '1; mode=block' },
+      ],
+    },
+  ],
+  env: {
+    NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL,
   },
   experimental: {
-    esmExternals: true,
-  },
-  env: {
-    NEXT_PUBLIC_APP_VERSION: '1.0.0',
+    optimizePackageImports: ['zustand', 'recharts', 'framer-motion'],
   },
 };
 

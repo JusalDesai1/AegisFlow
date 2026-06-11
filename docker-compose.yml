@@ -1,47 +1,23 @@
 version: '3.8'
 
 services:
-  # Next.js Application
-  web:
+  app:
     build: .
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:3001
-      - NEXT_PUBLIC_WS_URL=ws://localhost:3001
-    volumes:
-      - .:/app
-      - /app/node_modules
+      NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_WS_URL: ws://ws-mock:8080
     depends_on:
-      - api
+      - ws-mock
 
-  # Backend API (Optional - for local dev)
-  api:
-    image: node:18-alpine
-    working_dir: /app
-    command: npm run dev:api
+  ws-mock:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.ws
     ports:
-      - "3001:3001"
+      - "8080:8080"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://user:password@postgres:5432/aegisflow
-    volumes:
-      - ./server:/app
-    depends_on:
-      - postgres
-
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=aegisflow
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+      NODE_ENV: development
