@@ -1,9 +1,1 @@
-{
-  "extends": ["next/core-web-vitals"],
-  "rules": {
-    "react/display-name": "warn",
-    "react-hooks/rules-of-hooks": "error",
-    "@next/next/no-img-element": "warn",
-    "@next/next/no-html-link-for-pages": "warn"
-  }
-}
+{\n  \"extends\": [\n    \"next/core-web-vitals\",\n    \"eslint:recommended\"\n  ],\n  \"parser\": \"@typescript-eslint/parser\",\n  \"parserOptions\": {\n    \"ecmaVersion\": 2020,\n    \"sourceType\": \"module\",\n    \"ecmaFeatures\": {\n      \"jsx\": true\n    }\n  },\n  \"plugins\": [\n    \"@typescript-eslint\",\n    \"react\",\n    \"react-hooks\"\n  ],\n  \"rules\": {\n    \"react/display-name\": \"warn\",\n    \"react-hooks/rules-of-hooks\": \"error\",\n    \"react-hooks/exhaustive-deps\": \"warn\",\n    \"@next/next/no-img-element\": \"warn\",\n    \"@next/next/no-html-link-for-pages\": \"warn\",\n    \"@typescript-eslint/no-unused-vars\": [\n      \"warn\",\n      {\n        \"argsIgnorePattern\": \"^_\",\n        \"varsIgnorePattern\": \"^_\"\n      }\n    ],\n    \"@typescript-eslint/explicit-function-return-types\": \"off\",\n    \"@typescript-eslint/explicit-module-boundary-types\": \"off\",\n    \"no-console\": [\n      \"warn\",\n      {\n        \"allow\": [\n          \"warn\",\n          \"error\"\n        ]\n      }\n    ]\n  },\n  \"env\": {\n    \"browser\": true,\n    \"es2021\": true,\n    \"node\": true\n  }\n}\n
