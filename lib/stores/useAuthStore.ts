@@ -1,1 +1,180 @@
-import { create } from 'zustand';\nimport { devtools, persist } from 'zustand/middleware';\nimport immer from 'zustand/middleware/immer';\n\nexport type UserRole = 'government_command' | 'ndrf_dispatch' | 'medical_triage' | 'ngo_logistics' | 'data_analyst' | 'civilian_portal';\n\nexport interface User {\n  id: string;\n  name: string;\n  email: string;\n  role: UserRole;\n  agencyId: string;\n  permissions: string[];\n  isOnline: boolean;\n}\n\nexport interface Alert {\n  id: string;\n  severity: 'P1' | 'P2' | 'P3';\n  message: string;\n  affectedZones: string[];\n  expiresAt: string;\n  createdAt: string;\n}\n\ninterface AuthStore {\n  user: User | null;\n  isAuthenticated: boolean;\n  isLoading: boolean;\n  error: string | null;\n  sessionToken: string | null;\n  refreshToken: string | null;\n  alerts: Alert[];\n  login: (credentials: { email: string; password: string }) => Promise<void>;\n  logout: () => void;\n  switchRole: (role: UserRole) => void;\n  refreshSession: () => Promise<void>;\n  addAlert: (alert: Alert) => void;\n  dismissAlert: (alertId: string) => void;\n  clearError: () => void;\n}\n\nconst DEMO_USERS: Record<string, { name: string; password: string; role: UserRole; permissions: string[] }> = {\n  'admin@aegisflow.io': {\n    name: 'Admin Command',\n    password: 'demo123456',\n    role: 'government_command',\n    permissions: ['read', 'write', 'admin', 'broadcast', 'export']\n  },\n  'ndrf@aegisflow.io': {\n    name: 'NDRF Dispatch',\n    password: 'demo123456',\n    role: 'ndrf_dispatch',\n    permissions: ['read', 'write', 'dispatch', 'telemetry']\n  },\n  'medical@aegisflow.io': {\n    name: 'Medical Team',\n    password: 'demo123456',\n    role: 'medical_triage',\n    permissions: ['read', 'write', 'triage', 'inventory']\n  }\n};\n\nexport const useAuthStore = create<AuthStore>()(\n  devtools(\n    persist(\n      immer((set, get) => ({\n        user: null,\n        isAuthenticated: false,\n        isLoading: false,\n        error: null,\n        sessionToken: null,\n        refreshToken: null,\n        alerts: [],\n        \n        login: async (credentials) => {\n          set({ isLoading: true, error: null });\n          try {\n            await new Promise(r => setTimeout(r, 500));\n            const demoUser = DEMO_USERS[credentials.email];\n            \n            if (!demoUser || demoUser.password !== credentials.password) {\n              throw new Error('Invalid credentials');\n            }\n\n            const token = 'demo_jwt_token_' + Math.random().toString(36).substr(2, 9);\n            set(state => {\n              state.user = {\n                id: 'user_' + Math.random().toString(36).substr(2, 9),\n                email: credentials.email,\n                name: demoUser.name,\n                role: demoUser.role,\n                agencyId: 'agency_' + demoUser.role.split('_')[0],\n                permissions: demoUser.permissions,\n                isOnline: true\n              };\n              state.isAuthenticated = true;\n              state.sessionToken = token;\n              state.refreshToken = token + '_refresh';\n              state.isLoading = false;\n            });\n          } catch (error) {\n            set({ \n              error: error instanceof Error ? error.message : 'Login failed',\n              isLoading: false \n            });\n            throw error;\n          }\n        },\n\n        logout: () => {\n          set(state => {\n            state.user = null;\n            state.isAuthenticated = false;\n            state.sessionToken = null;\n            state.refreshToken = null;\n            state.alerts = [];\n          });\n        },\n\n        switchRole: (role: UserRole) => {\n          const user = get().user;\n          if (user) {\n            set(state => {\n              if (state.user) {\n                state.user.role = role;\n                state.user.agencyId = 'agency_' + role.split('_')[0];\n              }\n            });\n          }\n        },\n\n        refreshSession: async () => {\n          const token = get().sessionToken;\n          if (token) {\n            set(state => {\n              state.sessionToken = 'refreshed_' + Math.random().toString(36).substr(2, 9);\n            });\n          }\n        },\n\n        addAlert: (alert) => {\n          set(state => {\n            state.alerts = [alert, ...state.alerts].slice(0, 10);\n          });\n        },\n\n        dismissAlert: (alertId) => {\n          set(state => {\n            state.alerts = state.alerts.filter(a => a.id !== alertId);\n          });\n        },\n\n        clearError: () => {\n          set({ error: null });\n        }\n      })),\n      {\n        name: 'aegisflow-auth',\n        partialize: (state) => ({\n          sessionToken: state.sessionToken,\n          refreshToken: state.refreshToken,\n          user: state.user\n        })\n      }\n    )\n  )\n);\n
+import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
+import immer from 'zustand/middleware/immer';
+
+export type UserRole = 'government_command' | 'ndrf_dispatch' | 'medical_triage' | 'ngo_logistics' | 'data_analyst' | 'civilian';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  agency?: string;
+  permissions: string[];
+  avatar?: string;
+  lastLogin?: Date;
+}
+
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  token: string | null;
+  refreshToken: string | null;
+  expiresAt: number | null;
+}
+
+export interface AuthActions {
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  setUser: (user: User) => void;
+  setToken: (token: string, refreshToken?: string, expiresIn?: number) => void;
+  refreshAuthToken: () => Promise<void>;
+  hasPermission: (permission: string) => boolean;
+  isRole: (role: UserRole) => boolean;
+  checkTokenExpiry: () => boolean;
+}
+
+type AuthStore = AuthState & AuthActions;
+
+const initialState: AuthState = {
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  error: null,
+  token: null,
+  refreshToken: null,
+  expiresAt: null,
+};
+
+export const useAuthStore = create<AuthStore>()(
+  devtools(
+    persist(
+      immer((set, get) => ({
+        ...initialState,
+
+        login: async (email: string, password: string) => {
+          set((state) => {
+            state.isLoading = true;
+            state.error = null;
+          });
+
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password }),
+            });
+
+            if (!response.ok) {
+              throw new Error('Login failed');
+            }
+
+            const data = await response.json();
+
+            set((state) => {
+              state.user = data.user;
+              state.isAuthenticated = true;
+              state.token = data.token;
+              state.refreshToken = data.refreshToken;
+              state.expiresAt = Date.now() + (data.expiresIn || 3600) * 1000;
+              state.isLoading = false;
+            });
+          } catch (error) {
+            set((state) => {
+              state.error = error instanceof Error ? error.message : 'Login failed';
+              state.isLoading = false;
+            });
+            throw error;
+          }
+        },
+
+        logout: () => {
+          set((state) => {
+            state.user = null;
+            state.isAuthenticated = false;
+            state.token = null;
+            state.refreshToken = null;
+            state.expiresAt = null;
+            state.error = null;
+          });
+        },
+
+        setUser: (user: User) => {
+          set((state) => {
+            state.user = user;
+            state.isAuthenticated = true;
+          });
+        },
+
+        setToken: (token: string, refreshToken?: string, expiresIn?: number) => {
+          set((state) => {
+            state.token = token;
+            if (refreshToken) state.refreshToken = refreshToken;
+            if (expiresIn) state.expiresAt = Date.now() + expiresIn * 1000;
+          });
+        },
+
+        refreshAuthToken: async () => {
+          const state = get();
+          if (!state.refreshToken) {
+            throw new Error('No refresh token available');
+          }
+
+          try {
+            const response = await fetch('/api/auth/refresh', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken: state.refreshToken }),
+            });
+
+            if (!response.ok) {
+              throw new Error('Token refresh failed');
+            }
+
+            const data = await response.json();
+            set((state) => {
+              state.token = data.token;
+              state.expiresAt = Date.now() + (data.expiresIn || 3600) * 1000;
+            });
+          } catch (error) {
+            set((state) => {
+              state.error = error instanceof Error ? error.message : 'Token refresh failed';
+            });
+            throw error;
+          }
+        },
+
+        hasPermission: (permission: string) => {
+          const state = get();
+          return state.user?.permissions.includes(permission) ?? false;
+        },
+
+        isRole: (role: UserRole) => {
+          const state = get();
+          return state.user?.role === role;
+        },
+
+        checkTokenExpiry: () => {
+          const state = get();
+          if (!state.expiresAt) return false;
+          if (Date.now() >= state.expiresAt) {
+            get().logout();
+            return true;
+          }
+          return false;
+        },
+      })),
+      {
+        name: 'auth-storage',
+        partialize: (state) => ({
+          user: state.user,
+          token: state.token,
+          refreshToken: state.refreshToken,
+          expiresAt: state.expiresAt,
+        }),
+      }
+    )
+  )
+);
