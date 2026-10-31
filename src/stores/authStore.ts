@@ -1,85 +1,38 @@
-import { create } from 'zustand';
-import { defaultPermissionsByRole, type User, type UserRole, type Permission } from '@/types';
-
-interface AuthStore {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  offlineMode: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  switchRole: (role: UserRole) => Promise<void>;
-  setOfflineMode: (enabled: boolean) => void;
-  hasPermission: (permission: Permission) => boolean;
-  getUserPermissions: () => Permission[];
-}
-
-const demoUser: User = {
-  id: 'user-123',
-  email: 'commander@aegis.gov',
-  name: 'Operations Commander',
-  role: 'GOVERNMENT',
-  permissions: defaultPermissionsByRole.GOVERNMENT,
-  agency: 'National Disaster Management Authority',
-  lastActive: new Date(),
-  offlineMode: false,
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  poweredByHeader: false,
+  reactStrictMode: true,
+  compress: true,
+  output: 'standalone',
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://images.unsplash.com https://*.tiles.mapbox.com https://*.mapbox.com; connect-src 'self' https://*.mapbox.com; frame-ancestors 'none';",
+          },
+        ],
+      },
+    ];
+  },
 };
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
-  user: demoUser,
-  isAuthenticated: true,
-  isLoading: false,
-  offlineMode: false,
-
-  login: async (email: string, password: string) => {
-    set({ isLoading: true });
-    try {
-      const normalizedEmail = email.trim().toLowerCase();
-      if (!normalizedEmail || !password.trim()) {
-        throw new Error('Missing credentials');
-      }
-
-      const nextUser: User = {
-        ...demoUser,
-        email: normalizedEmail,
-        name: normalizedEmail.includes('medical') ? 'Medical Triage Lead' : 'Operations Commander',
-      };
-
-      set({ user: nextUser, isAuthenticated: true });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  logout: () => set({ user: null, isAuthenticated: false }),
-
-  switchRole: async (role: UserRole) => {
-    const { user } = get();
-    if (!user) return;
-
-    set({
-      user: {
-        ...user,
-        role,
-        permissions: defaultPermissionsByRole[role],
-      },
-    });
-  },
-
-  setOfflineMode: (enabled: boolean) => {
-    const { user } = get();
-    if (!user) return;
-
-    set({
-      offlineMode: enabled,
-      user: {
-        ...user,
-        offlineMode: enabled,
-      },
-    });
-  },
-
-  hasPermission: (permission: Permission) => get().user?.permissions.includes(permission) ?? false,
-
-  getUserPermissions: () => get().user?.permissions ?? [],
-}));
+export default nextConfig;
