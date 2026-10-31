@@ -1,92 +1,50 @@
-import { create } from 'zustand';
-import { defaultLayers, mockMapFeatures } from '@/lib/mockData';
-import type { GISLayer, MapFeature } from '@/types';
+'use client';
 
-interface GISStore {
-  layers: GISLayer[];
-  activeLayerIds: string[];
-  features: MapFeature[];
-  center: [number, number];
-  zoom: number;
-  bearing: number;
-  pitch: number;
-  selectedSector: string | null;
-  severityFilter: string | null;
-  unitTypeFilter: string | null;
-  addLayer: (layer: GISLayer) => void;
-  toggleLayer: (layerId: string) => void;
-  updateLayerStyle: (layerId: string, style: Record<string, unknown>) => void;
-  addFeature: (feature: MapFeature) => void;
-  updateFeature: (featureId: string, updates: Partial<MapFeature>) => void;
-  removeFeature: (featureId: string) => void;
-  setMapView: (center: [number, number], zoom: number, bearing?: number, pitch?: number) => void;
-  setSectorFilter: (sector: string | null) => void;
-  setSeverityFilter: (severity: string | null) => void;
-  setUnitTypeFilter: (unitType: string | null) => void;
-  resetFilters: () => void;
-  getVisibleFeatures: () => MapFeature[];
+import dynamic from 'next/dynamic';
+import { useGISStore } from '@/stores/gisStore';
+
+const MapboxMap = dynamic(() => import('@/components/MapboxMapInner'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[420px] items-center justify-center rounded-2xl border border-aegis-border bg-aegis-card text-aegis-text-secondary">
+      Loading map...
+    </div>
+  ),
+});
+
+export default function GISPage() {
+  const { features, layers, activeLayerIds, toggleLayer } = useGISStore();
+
+  return (
+    <div className="space-y-6 p-6">
+      <div className="rounded-2xl border border-aegis-border bg-aegis-card p-5">
+        <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-2xl font-bold text-aegis-text-primary">GIS Intelligence</h2>
+          <div className="rounded-full border border-aegis-info/40 bg-aegis-info/10 px-3 py-1 text-sm text-aegis-info">
+            11.4 km risk radius
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1.5fr_0.8fr]">
+          <MapboxMap features={features} center={[19.076, 72.8777]} zoom={11} />
+
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-aegis-text-primary">Layers</h3>
+            {layers.map((layer) => (
+              <button
+                key={layer.id}
+                onClick={() => toggleLayer(layer.id)}
+                className="flex w-full items-center justify-between rounded-xl border border-aegis-border bg-aegis-darker p-3 text-left"
+              >
+                <span className="text-aegis-text-primary">{layer.name}</span>
+                <span
+                  className={`h-3 w-3 rounded-full ${activeLayerIds.includes(layer.id) ? 'bg-aegis-success' : 'bg-aegis-border'}`}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
-
-export const useGISStore = create<GISStore>((set, get) => ({
-  layers: defaultLayers,
-  activeLayerIds: defaultLayers.filter((layer) => layer.visible).map((layer) => layer.id),
-  features: mockMapFeatures,
-  center: [19.076, 72.8777],
-  zoom: 11,
-  bearing: 0,
-  pitch: 0,
-  selectedSector: null,
-  severityFilter: null,
-  unitTypeFilter: null,
-
-  addLayer: (layer: GISLayer) => set((state) => ({ layers: [...state.layers, layer] })),
-
-  toggleLayer: (layerId: string) =>
-    set((state) => ({
-      layers: state.layers.map((layer) =>
-        layer.id === layerId ? { ...layer, visible: !layer.visible } : layer,
-      ),
-      activeLayerIds: state.activeLayerIds.includes(layerId)
-        ? state.activeLayerIds.filter((id) => id !== layerId)
-        : [...state.activeLayerIds, layerId],
-    })),
-
-  updateLayerStyle: (layerId: string, style: Record<string, unknown>) =>
-    set((state) => ({
-      layers: state.layers.map((layer) =>
-        layer.id === layerId ? { ...layer, style: { ...(layer.style ?? {}), ...style } } : layer,
-      ),
-    })),
-
-  addFeature: (feature: MapFeature) =>
-    set((state) => ({ features: [feature, ...state.features] })),
-
-  updateFeature: (featureId: string, updates: Partial<MapFeature>) =>
-    set((state) => ({
-      features: state.features.map((feature) =>
-        feature.id === featureId ? { ...feature, ...updates } : feature,
-      ),
-    })),
-
-  removeFeature: (featureId: string) =>
-    set((state) => ({ features: state.features.filter((feature) => feature.id !== featureId) })),
-
-  setMapView: (center: [number, number], zoom: number, bearing = 0, pitch = 0) =>
-    set({ center, zoom, bearing, pitch }),
-
-  setSectorFilter: (sector: string | null) => set({ selectedSector: sector }),
-  setSeverityFilter: (severity: string | null) => set({ severityFilter: severity }),
-  setUnitTypeFilter: (unitType: string | null) => set({ unitTypeFilter: unitType }),
-
-  resetFilters: () =>
-    set({
-      selectedSector: null,
-      severityFilter: null,
-      unitTypeFilter: null,
-    }),
-
-  getVisibleFeatures: () => {
-    const state = get();
-    return state.features.filter((feature) => state.activeLayerIds.includes(feature.layerId));
-  },
-}));
