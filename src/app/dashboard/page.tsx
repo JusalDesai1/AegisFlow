@@ -1,82 +1,92 @@
-'use client';
+import { create } from 'zustand';
+import { defaultLayers, mockMapFeatures } from '@/lib/mockData';
+import type { GISLayer, MapFeature } from '@/types';
 
-import { useEffect, useState } from 'react';
-
-export default function DashboardPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-aegis-darker via-aegis-dark to-aegis-card p-6">
-      <div className="container mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-aegis-text-primary mb-2">Emergency Command Center</h1>
-          <p className="text-aegis-text-secondary">Real-time incident monitoring and response coordination</p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Active Incidents', value: '24', color: 'aegis-critical' },
-            { label: 'Units Deployed', value: '156', color: 'aegis-success' },
-            { label: 'Shelters Active', value: '18', color: 'aegis-info' },
-            { label: 'Affected Population', value: '45K+', color: 'aegis-warning' },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="p-6 rounded-lg bg-aegis-card border border-aegis-border hover:border-aegis-accent transition-colors"
-            >
-              <div className="text-aegis-text-tertiary text-sm font-medium mb-2">{stat.label}</div>
-              <div className={`text-3xl font-bold text-${stat.color}`}>{stat.value}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Main Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Map Placeholder */}
-          <div className="lg:col-span-2 h-96 rounded-lg bg-aegis-card border border-aegis-border p-6 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🗺️</div>
-              <h3 className="text-xl font-semibold text-aegis-text-primary mb-2">GIS Map</h3>
-              <p className="text-aegis-text-tertiary mb-4">Configure Mapbox token to view live incident map</p>
-              <code className="text-sm bg-aegis-darker p-2 rounded inline-block text-aegis-accent">
-                NEXT_PUBLIC_MAPBOX_TOKEN
-              </code>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="h-96 rounded-lg bg-aegis-card border border-aegis-border p-6 overflow-y-auto">
-            <h3 className="text-lg font-semibold text-aegis-text-primary mb-4">Recent Incidents</h3>
-            <div className="space-y-3">
-              {[
-                { id: 1, type: 'Flood', status: 'Active', level: 'Critical' },
-                { id: 2, type: 'Fire', status: 'Active', level: 'High' },
-                { id: 3, type: 'Landslide', status: 'Monitoring', level: 'Medium' },
-              ].map((incident) => (
-                <div key={incident.id} className="p-3 bg-aegis-darker rounded border border-aegis-border">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-semibold text-aegis-text-primary">{incident.type}</div>
-                      <div className="text-xs text-aegis-text-tertiary">{incident.status}</div>
-                    </div>
-                    <span className="text-xs px-2 py-1 rounded bg-aegis-critical text-white">
-                      {incident.level}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+interface GISStore {
+  layers: GISLayer[];
+  activeLayerIds: string[];
+  features: MapFeature[];
+  center: [number, number];
+  zoom: number;
+  bearing: number;
+  pitch: number;
+  selectedSector: string | null;
+  severityFilter: string | null;
+  unitTypeFilter: string | null;
+  addLayer: (layer: GISLayer) => void;
+  toggleLayer: (layerId: string) => void;
+  updateLayerStyle: (layerId: string, style: Record<string, unknown>) => void;
+  addFeature: (feature: MapFeature) => void;
+  updateFeature: (featureId: string, updates: Partial<MapFeature>) => void;
+  removeFeature: (featureId: string) => void;
+  setMapView: (center: [number, number], zoom: number, bearing?: number, pitch?: number) => void;
+  setSectorFilter: (sector: string | null) => void;
+  setSeverityFilter: (severity: string | null) => void;
+  setUnitTypeFilter: (unitType: string | null) => void;
+  resetFilters: () => void;
+  getVisibleFeatures: () => MapFeature[];
 }
+
+export const useGISStore = create<GISStore>((set, get) => ({
+  layers: defaultLayers,
+  activeLayerIds: defaultLayers.filter((layer) => layer.visible).map((layer) => layer.id),
+  features: mockMapFeatures,
+  center: [19.076, 72.8777],
+  zoom: 11,
+  bearing: 0,
+  pitch: 0,
+  selectedSector: null,
+  severityFilter: null,
+  unitTypeFilter: null,
+
+  addLayer: (layer: GISLayer) => set((state) => ({ layers: [...state.layers, layer] })),
+
+  toggleLayer: (layerId: string) =>
+    set((state) => ({
+      layers: state.layers.map((layer) =>
+        layer.id === layerId ? { ...layer, visible: !layer.visible } : layer,
+      ),
+      activeLayerIds: state.activeLayerIds.includes(layerId)
+        ? state.activeLayerIds.filter((id) => id !== layerId)
+        : [...state.activeLayerIds, layerId],
+    })),
+
+  updateLayerStyle: (layerId: string, style: Record<string, unknown>) =>
+    set((state) => ({
+      layers: state.layers.map((layer) =>
+        layer.id === layerId ? { ...layer, style: { ...(layer.style ?? {}), ...style } } : layer,
+      ),
+    })),
+
+  addFeature: (feature: MapFeature) =>
+    set((state) => ({ features: [feature, ...state.features] })),
+
+  updateFeature: (featureId: string, updates: Partial<MapFeature>) =>
+    set((state) => ({
+      features: state.features.map((feature) =>
+        feature.id === featureId ? { ...feature, ...updates } : feature,
+      ),
+    })),
+
+  removeFeature: (featureId: string) =>
+    set((state) => ({ features: state.features.filter((feature) => feature.id !== featureId) })),
+
+  setMapView: (center: [number, number], zoom: number, bearing = 0, pitch = 0) =>
+    set({ center, zoom, bearing, pitch }),
+
+  setSectorFilter: (sector: string | null) => set({ selectedSector: sector }),
+  setSeverityFilter: (severity: string | null) => set({ severityFilter: severity }),
+  setUnitTypeFilter: (unitType: string | null) => set({ unitTypeFilter: unitType }),
+
+  resetFilters: () =>
+    set({
+      selectedSector: null,
+      severityFilter: null,
+      unitTypeFilter: null,
+    }),
+
+  getVisibleFeatures: () => {
+    const state = get();
+    return state.features.filter((feature) => state.activeLayerIds.includes(feature.layerId));
+  },
+}));

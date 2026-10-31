@@ -1,83 +1,128 @@
-// Disaster Types
-export interface Disaster {
-  id: string;
-  type: 'earthquake' | 'flood' | 'wildfire' | 'hurricane' | 'tornado' | 'tsunami' | 'drought';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  latitude: number;
-  longitude: number;
-  radius: number; // in km
-  detectedAt: Date;
-  affectedPopulation: number;
-  estimatedDamage: number; // in USD
-  status: 'active' | 'contained' | 'resolved';
-  description: string;
-  resources: Resource[];
-}
+export type UserRole = 'NDRF' | 'GOVERNMENT' | 'MEDICAL' | 'NGO' | 'ANALYST' | 'CIVILIAN';
 
-// Resource Management
-export interface Resource {
-  id: string;
-  type: 'ambulance' | 'fire-truck' | 'police' | 'rescue-team' | 'shelter' | 'supply' | 'personnel';
-  status: 'available' | 'deployed' | 'in-transit' | 'busy';
-  latitude: number;
-  longitude: number;
-  capacity: number;
-  currentLoad: number;
-  agencyId: string;
-}
+export type Permission =
+  | 'view_dashboard'
+  | 'view_gis'
+  | 'dispatch_units'
+  | 'create_alerts'
+  | 'manage_shelters'
+  | 'view_analytics'
+  | 'manage_logistics'
+  | 'access_classified';
 
-// Alert System
-export interface Alert {
-  id: string;
-  disasterId: string;
-  level: 'info' | 'warning' | 'critical';
-  message: string;
-  timestamp: Date;
-  recipients: string[];
-  acknowledged: boolean;
-}
+export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type IncidentStatus = 'active' | 'monitoring' | 'contained' | 'resolved';
+export type UnitStatus = 'available' | 'deployed' | 'en-route' | 'maintenance';
+export type DispatchStatus = 'assigned' | 'en-route' | 'on-scene' | 'resolved';
 
-// Agency/Organization
-export interface Agency {
-  id: string;
-  name: string;
-  type: 'ndma' | 'sdma' | 'district' | 'hospital' | 'police';
-  jurisdiction: string;
-  contactEmail: string;
-  contactPhone: string;
-  resources: string[]; // Resource IDs
-}
-
-// User/Operator
 export interface User {
   id: string;
-  name: string;
   email: string;
-  role: 'admin' | 'coordinator' | 'responder' | 'viewer';
-  agencyId: string;
-  permissions: string[];
+  name: string;
+  role: UserRole;
+  permissions: Permission[];
+  agency: string;
+  lastActive: Date;
+  offlineMode: boolean;
 }
 
-// Analytics
-export interface DisasterMetrics {
-  totalIncidents: number;
+export interface Incident {
+  id: string;
+  title: string;
+  type: 'Flood' | 'Fire' | 'Landslide' | 'Storm' | 'Earthquake' | 'Medical';
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  affectedArea: string;
+  summary: string;
+  coordinate: [number, number];
+  agency: string;
+  reportedAt: Date;
+  unitsAssigned: number;
+}
+
+export interface Alert {
+  id: string;
+  title: string;
+  type: 'Weather' | 'Medical' | 'Infrastructure' | 'Security';
+  severity: IncidentSeverity;
+  message: string;
+  timestamp: Date;
+  acknowledged: boolean;
+  acknowledgedBy?: string;
+  incidentId?: string;
+}
+
+export interface Unit {
+  id: string;
+  name: string;
+  type: 'ambulance' | 'fire-truck' | 'rescue-team' | 'helicopter' | 'police' | 'logistics';
+  status: UnitStatus;
+  location: [number, number];
+  agency: string;
+  capacity: number;
+  etaMinutes: number;
+  responseScore: number;
+}
+
+export interface Shelter {
+  id: string;
+  name: string;
+  capacity: number;
+  occupied: number;
+  location: [number, number];
+  type: 'school' | 'community-center' | 'hospital' | 'temporary';
+  status: 'open' | 'limited' | 'full';
+}
+
+export interface Dispatch {
+  id: string;
+  incidentId: string;
+  unitId: string;
+  status: DispatchStatus;
+  etaMinutes: number;
+  destination: string;
+  assignedAt: Date;
+}
+
+export interface DashboardMetrics {
   activeIncidents: number;
   affectedPopulation: number;
-  resourcesDeployed: number;
-  responseTime: number; // average in minutes
-  casualtyCount: number;
-  shelterCapacity: number;
-  sheltersActive: number;
+  deployedUnits: number;
+  sheltersOpen: number;
+  aiAccuracy: number;
+  systemUptime: number;
+  responseTimeAverage: number;
+  evacuationProgress: number;
 }
 
-// Dashboard State
-export interface DashboardState {
-  disasters: Disaster[];
-  resources: Resource[];
-  alerts: Alert[];
-  agencies: Agency[];
-  metrics: DisasterMetrics;
-  selectedDisaster: Disaster | null;
-  mapCenter: { lat: number; lng: number };
-  mapZoom: number;
+export interface GISLayer {
+  id: string;
+  name: string;
+  type: 'INCIDENTS' | 'UNITS' | 'SHELTERS' | 'WEATHER' | 'EVACUATION' | 'THERMAL';
+  visible: boolean;
+  opacity: number;
+  style?: Record<string, unknown>;
 }
+
+export interface MapFeature {
+  id: string;
+  type: 'incident' | 'unit' | 'shelter' | 'weather';
+  layerId: string;
+  coordinates: [number, number];
+  properties: Record<string, string | number | boolean | undefined>;
+}
+
+export interface SensorReading {
+  label: string;
+  value: number;
+  unit: string;
+}
+
+export const defaultPermissionsByRole: Record<UserRole, Permission[]> = {
+  NDRF: ['view_dashboard', 'view_gis', 'dispatch_units', 'view_analytics'],
+  GOVERNMENT: ['view_dashboard', 'view_gis', 'dispatch_units', 'create_alerts', 'access_classified'],
+  MEDICAL: ['view_dashboard', 'view_gis', 'manage_shelters', 'view_analytics'],
+  NGO: ['view_dashboard', 'view_gis', 'manage_shelters', 'manage_logistics'],
+  ANALYST: ['view_dashboard', 'view_gis', 'view_analytics'],
+  CIVILIAN: ['view_dashboard'],
+};

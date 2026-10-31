@@ -1,160 +1,107 @@
 import { create } from 'zustand';
-import { GISLayer, MapFeature } from '@/types';
+import {
+  mockAlerts,
+  mockDispatches,
+  mockIncidents,
+  mockMetrics,
+  mockShelters,
+  mockUnits,
+} from '@/lib/mockData';
+import type { Alert, DashboardMetrics, Dispatch, Incident, Shelter, Unit } from '@/types';
 
-interface GISStore {
-  // Layer management
-  layers: GISLayer[];
-  activeLayerIds: string[];
-  features: MapFeature[];
-  
-  // Map viewport
-  center: [number, number];
-  zoom: number;
-  bearing: number;
-  pitch: number;
-  
-  // Filtering
-  selectedSector: string | null;
-  severityFilter: string | null;
-  unitTypeFilter: string | null;
-  
-  // Actions
-  addLayer: (layer: GISLayer) => void;
-  toggleLayer: (layerId: string) => void;
-  updateLayerStyle: (layerId: string, style: Record<string, any>) => void;
-  addFeature: (feature: MapFeature) => void;
-  updateFeature: (featureId: string, updates: Partial<MapFeature>) => void;
-  removeFeature: (featureId: string) => void;
-  setMapView: (center: [number, number], zoom: number, bearing?: number, pitch?: number) => void;
-  setSectorFilter: (sector: string | null) => void;
-  setSeverityFilter: (severity: string | null) => void;
-  setUnitTypeFilter: (unitType: string | null) => void;
-  resetFilters: () => void;
-  getVisibleFeatures: () => MapFeature[];
+interface OperationsStore {
+  incidents: Incident[];
+  alerts: Alert[];
+  units: Unit[];
+  shelters: Shelter[];
+  dispatches: Dispatch[];
+  metrics: DashboardMetrics;
+  selectedIncidentId: string | null;
+  selectedUnitId: string | null;
+  activeTab: string;
+  mapZoom: number;
+  mapCenter: [number, number];
+  addIncident: (incident: Incident) => void;
+  updateIncident: (incidentId: string, updates: Partial<Incident>) => void;
+  addAlert: (alert: Alert) => void;
+  acknowledgeAlert: (alertId: string, userId: string) => void;
+  updateUnit: (unitId: string, updates: Partial<Unit>) => void;
+  createDispatch: (dispatch: Dispatch) => void;
+  updateDispatchStatus: (dispatchId: string, status: string) => void;
+  selectIncident: (incidentId: string | null) => void;
+  selectUnit: (unitId: string | null) => void;
+  updateMapView: (zoom: number, center: [number, number]) => void;
+  setActiveTab: (tab: string) => void;
+  updateMetrics: (metrics: Partial<DashboardMetrics>) => void;
 }
 
-const defaultLayers: GISLayer[] = [
-  {
-    id: 'incidents',
-    name: 'Incidents',
-    type: 'INCIDENTS',
-    visible: true,
-    opacity: 1,
-  },
-  {
-    id: 'units',
-    name: 'Rescue Units',
-    type: 'UNITS',
-    visible: true,
-    opacity: 1,
-  },
-  {
-    id: 'shelters',
-    name: 'Shelters & Supply',
-    type: 'SHELTERS',
-    visible: true,
-    opacity: 1,
-  },
-  {
-    id: 'weather',
-    name: 'Weather Intelligence',
-    type: 'WEATHER',
-    visible: true,
-    opacity: 0.8,
-  },
-  {
-    id: 'evacuation',
-    name: 'Evacuation Routes',
-    type: 'EVACUATION',
-    visible: false,
-    opacity: 0.7,
-  },
-  {
-    id: 'thermal',
-    name: 'Thermal Drone Feed',
-    type: 'THERMAL',
-    visible: false,
-    opacity: 0.9,
-  },
-];
+export const useOperationsStore = create<OperationsStore>((set) => ({
+  incidents: mockIncidents,
+  alerts: mockAlerts,
+  units: mockUnits,
+  shelters: mockShelters,
+  dispatches: mockDispatches,
+  metrics: mockMetrics,
+  selectedIncidentId: mockIncidents[0]?.id ?? null,
+  selectedUnitId: mockUnits[0]?.id ?? null,
+  activeTab: 'dashboard',
+  mapZoom: 10,
+  mapCenter: [19.076, 72.8777],
 
-export const useGISStore = create<GISStore>((set, get) => ({
-  layers: defaultLayers,
-  activeLayerIds: defaultLayers.filter((l) => l.visible).map((l) => l.id),
-  features: [],
-  center: [34.0522, -118.2437],
-  zoom: 12,
-  bearing: 0,
-  pitch: 0,
-  selectedSector: null,
-  severityFilter: null,
-  unitTypeFilter: null,
-
-  addLayer: (layer: GISLayer) =>
+  addIncident: (incident: Incident) =>
     set((state) => ({
-      layers: [...state.layers, layer],
+      incidents: [incident, ...state.incidents],
     })),
 
-  toggleLayer: (layerId: string) =>
+  updateIncident: (incidentId: string, updates: Partial<Incident>) =>
     set((state) => ({
-      layers: state.layers.map((layer) =>
-        layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
-      ),
-      activeLayerIds: state.activeLayerIds.includes(layerId)
-        ? state.activeLayerIds.filter((id) => id !== layerId)
-        : [...state.activeLayerIds, layerId],
-    })),
-
-  updateLayerStyle: (layerId: string, style: Record<string, any>) =>
-    set((state) => ({
-      layers: state.layers.map((layer) =>
-        layer.id === layerId
-          ? { ...layer, style: { ...layer.style, ...style } }
-          : layer
+      incidents: state.incidents.map((incident) =>
+        incident.id === incidentId ? { ...incident, ...updates } : incident,
       ),
     })),
 
-  addFeature: (feature: MapFeature) =>
+  addAlert: (alert: Alert) =>
     set((state) => ({
-      features: [feature, ...state.features],
+      alerts: [alert, ...state.alerts],
     })),
 
-  updateFeature: (featureId: string, updates: Partial<MapFeature>) =>
+  acknowledgeAlert: (alertId: string, userId: string) =>
     set((state) => ({
-      features: state.features.map((feature) =>
-        feature.id === featureId ? { ...feature, ...updates } : feature
+      alerts: state.alerts.map((alert) =>
+        alert.id === alertId
+          ? {
+              ...alert,
+              acknowledged: true,
+              acknowledgedBy: userId,
+              timestamp: new Date(),
+            }
+          : alert,
       ),
     })),
 
-  removeFeature: (featureId: string) =>
+  updateUnit: (unitId: string, updates: Partial<Unit>) =>
     set((state) => ({
-      features: state.features.filter((f) => f.id !== featureId),
+      units: state.units.map((unit) => (unit.id === unitId ? { ...unit, ...updates } : unit)),
     })),
 
-  setMapView: (center: [number, number], zoom: number, bearing = 0, pitch = 0) =>
-    set({ center, zoom, bearing, pitch }),
+  createDispatch: (dispatch: Dispatch) =>
+    set((state) => ({
+      dispatches: [dispatch, ...state.dispatches],
+    })),
 
-  setSectorFilter: (sector: string | null) =>
-    set({ selectedSector: sector }),
+  updateDispatchStatus: (dispatchId: string, status: string) =>
+    set((state) => ({
+      dispatches: state.dispatches.map((dispatch) =>
+        dispatch.id === dispatchId ? { ...dispatch, status: status as Dispatch['status'] } : dispatch,
+      ),
+    })),
 
-  setSeverityFilter: (severity: string | null) =>
-    set({ severityFilter: severity }),
-
-  setUnitTypeFilter: (unitType: string | null) =>
-    set({ unitTypeFilter: unitType }),
-
-  resetFilters: () =>
-    set({
-      selectedSector: null,
-      severityFilter: null,
-      unitTypeFilter: null,
-    }),
-
-  getVisibleFeatures: () => {
-    const state = get();
-    return state.features.filter((feature) => {
-      const layerId = feature.properties?.layerId;
-      return state.activeLayerIds.includes(layerId);
-    });
-  },
+  selectIncident: (incidentId: string | null) => set({ selectedIncidentId: incidentId }),
+  selectUnit: (unitId: string | null) => set({ selectedUnitId: unitId }),
+  updateMapView: (zoom: number, center: [number, number]) => set({ mapZoom: zoom, mapCenter: center }),
+  setActiveTab: (tab: string) => set({ activeTab: tab }),
+  updateMetrics: (metrics: Partial<DashboardMetrics>) =>
+    set((state) => ({
+      metrics: { ...state.metrics, ...metrics },
+    })),
 }));

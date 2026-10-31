@@ -1,125 +1,89 @@
 import { create } from 'zustand';
-import { Incident, Alert, Unit, Shelter, Dispatch, DashboardMetrics } from '@/types';
+import {
+  defaultPermissionsByRole,
+  type User,
+  type UserRole,
+  type Permission,
+} from '@/types';
 
-interface OperationsStore {
-  // Core operational data
-  incidents: Incident[];
-  alerts: Alert[];
-  units: Unit[];
-  shelters: Shelter[];
-  dispatches: Dispatch[];
-  metrics: DashboardMetrics;
-  
-  // UI state
-  selectedIncidentId: string | null;
-  selectedUnitId: string | null;
-  activeTab: string;
-  mapZoom: number;
-  mapCenter: [number, number];
-  
-  // Actions
-  addIncident: (incident: Incident) => void;
-  updateIncident: (incidentId: string, updates: Partial<Incident>) => void;
-  addAlert: (alert: Alert) => void;
-  acknowledgeAlert: (alertId: string, userId: string) => void;
-  updateUnit: (unitId: string, updates: Partial<Unit>) => void;
-  createDispatch: (dispatch: Dispatch) => void;
-  updateDispatchStatus: (dispatchId: string, status: string) => void;
-  selectIncident: (incidentId: string | null) => void;
-  selectUnit: (unitId: string | null) => void;
-  updateMapView: (zoom: number, center: [number, number]) => void;
-  setActiveTab: (tab: string) => void;
-  updateMetrics: (metrics: Partial<DashboardMetrics>) => void;
+interface AuthStore {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  offlineMode: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  switchRole: (role: UserRole) => Promise<void>;
+  setOfflineMode: (enabled: boolean) => void;
+  hasPermission: (permission: Permission) => boolean;
+  getUserPermissions: () => Permission[];
 }
 
-const initialMetrics: DashboardMetrics = {
-  activeIncidents: 0,
-  affectedPopulation: 0,
-  deployedUnits: 0,
-  sheltersOpen: 0,
-  aiAccuracy: 0,
-  systemUptime: 0,
-  responseTimeAverage: 0,
-  evacuationProgress: 0,
+const demoUser: User = {
+  id: 'user-123',
+  email: 'commander@aegis.gov',
+  name: 'Operations Commander',
+  role: 'GOVERNMENT',
+  permissions: defaultPermissionsByRole.GOVERNMENT,
+  agency: 'National Disaster Management Authority',
+  lastActive: new Date(),
+  offlineMode: false,
 };
 
-export const useOperationsStore = create<OperationsStore>((set) => ({
-  incidents: [],
-  alerts: [],
-  units: [],
-  shelters: [],
-  dispatches: [],
-  metrics: initialMetrics,
-  selectedIncidentId: null,
-  selectedUnitId: null,
-  activeTab: 'dashboard',
-  mapZoom: 10,
-  mapCenter: [0, 0],
+export const useAuthStore = create<AuthStore>((set, get) => ({
+  user: demoUser,
+  isAuthenticated: true,
+  isLoading: false,
+  offlineMode: false,
 
-  addIncident: (incident: Incident) =>
-    set((state) => ({
-      incidents: [incident, ...state.incidents],
-    })),
+  login: async (email: string, password: string) => {
+    set({ isLoading: true });
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail || !password.trim()) throw new Error('Missing credentials');
 
-  updateIncident: (incidentId: string, updates: Partial<Incident>) =>
-    set((state) => ({
-      incidents: state.incidents.map((inc) =>
-        inc.id === incidentId ? { ...inc, ...updates } : inc
-      ),
-    })),
+      set({
+        user: {
+          ...demoUser,
+          email: normalizedEmail,
+          name: normalizedEmail.includes('medical') ? 'Medical Triage Lead' : 'Operations Commander',
+        },
+        isAuthenticated: true,
+      });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
-  addAlert: (alert: Alert) =>
-    set((state) => ({
-      alerts: [alert, ...state.alerts],
-    })),
+  logout: () => set({ user: null, isAuthenticated: false }),
 
-  acknowledgeAlert: (alertId: string, userId: string) =>
-    set((state) => ({
-      alerts: state.alerts.map((alert) =>
-        alert.id === alertId
-          ? {
-              ...alert,
-              acknowledged: true,
-              acknowledgedBy: userId,
-              acknowledgedAt: new Date(),
-            }
-          : alert
-      ),
-    })),
+  switchRole: async (role: UserRole) => {
+    const { user } = get();
+    if (!user) return;
 
-  updateUnit: (unitId: string, updates: Partial<Unit>) =>
-    set((state) => ({
-      units: state.units.map((unit) =>
-        unit.id === unitId ? { ...unit, ...updates } : unit
-      ),
-    })),
+    set({
+      user: {
+        ...user,
+        role,
+        permissions: defaultPermissionsByRole[role],
+      },
+    });
+  },
 
-  createDispatch: (dispatch: Dispatch) =>
-    set((state) => ({
-      dispatches: [dispatch, ...state.dispatches],
-    })),
+  setOfflineMode: (enabled: boolean) => {
+    const { user } = get();
+    if (!user) return;
 
-  updateDispatchStatus: (dispatchId: string, status: string) =>
-    set((state) => ({
-      dispatches: state.dispatches.map((dispatch) =>
-        dispatch.id === dispatchId ? { ...dispatch, status: status as any } : dispatch
-      ),
-    })),
+    set({
+      offlineMode: enabled,
+      user: {
+        ...user,
+        offlineMode: enabled,
+      },
+    });
+  },
 
-  selectIncident: (incidentId: string | null) =>
-    set({ selectedIncidentId: incidentId }),
+  hasPermission: (permission: Permission) => get().user?.permissions.includes(permission) ?? false,
 
-  selectUnit: (unitId: string | null) =>
-    set({ selectedUnitId: unitId }),
-
-  updateMapView: (zoom: number, center: [number, number]) =>
-    set({ mapZoom: zoom, mapCenter: center }),
-
-  setActiveTab: (tab: string) =>
-    set({ activeTab: tab }),
-
-  updateMetrics: (metrics: Partial<DashboardMetrics>) =>
-    set((state) => ({
-      metrics: { ...state.metrics, ...metrics },
-    })),
+  getUserPermissions: () => get().user?.permissions ?? [],
 }));
