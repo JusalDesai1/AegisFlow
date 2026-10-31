@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionToken } from '@/lib/auth';
+export async function GET() {
+  const hasSupabaseConfig = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-export async function GET(request: NextRequest) {
-  const token = request.cookies.get('aegis_session')?.value;
-  if (!token) {
-    return NextResponse.json({ user: null }, { status: 200 });
-  }
-
-  const user = verifySessionToken(token);
-  return NextResponse.json({ user: user ?? null }, { status: 200 });
+  return Response.json({
+    ok: true,
+    app: 'AegisFlow',
+    status: 'healthy',
+    database: hasSupabaseConfig ? 'supabase-configured' : 'mock-mode',
+    authSecret: process.env.NODE_ENV === 'production' ? 'configured' : 'development',
+    mapbox: process.env.NEXT_PUBLIC_MAPBOX_TOKEN ? 'configured' : 'missing',
+    timestamp: new Date().toISOString(),
+  });
 }
